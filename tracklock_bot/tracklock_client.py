@@ -156,11 +156,10 @@ class TracklockClient:
         ids = self._resolve_game_ids(hero_slug)
 
         build_names = self._extract_build_names(soup, hero_slug)
-        summary_wr, summary_matches = self._extract_summary_wr_matches(soup)
-
         rows: list[BuildRow] = []
         for index, build_number in enumerate(sorted(build_names.keys()), start=1):
             tracklock_id = ids.tracklock_id if index == 1 else None
+            build_wr, build_matches = self._fetch_build_summary_stats(hero_slug, build_number)
             rows.append(
                 BuildRow(
                     hero_name=hero_name,
@@ -169,8 +168,8 @@ class TracklockClient:
                     game_build_id=tracklock_id,
                     build_name=build_names[build_number],
                     build_type="tracklock",
-                    win_rate=summary_wr.get(build_number),
-                    matches=summary_matches.get(build_number),
+                    win_rate=build_wr,
+                    matches=build_matches,
                     hero_builds_url=hero_builds_url,
                 )
             )
@@ -224,29 +223,38 @@ class TracklockClient:
 
         return result
 
-    def _extract_summary_wr_matches(self, soup: BeautifulSoup) -> tuple[dict[int, float], dict[int, int]]:
-        wr_by_build: dict[int, float] = {}
-        matches_by_build: dict[int, int] = {}
+    def _fetch_build_summary_stats(self, hero_slug: str, build_number: int) -> tuple[float | None, int | None]:
+        try:
+            html = self._get_html(f"/heroes/{hero_slug}/build?build={build_number}")
+        except Exception as exc:
+            LOGGER.debug("Could not fetch summary for %s build %s: %s", hero_slug, build_number, exc)
+            return None, None
 
-        text = soup.get_text("\n", strip=True)
-        current_build = 1
-        if "?build=2" in str(soup):
-            # Best effort for multi-build pages where summary is the selected build.
-            active = soup.find("a", href=re.compile(r"\?build=(\d+)"), attrs={"aria-current": "page"})
-            if active:
-                match = re.search(r"\?build=(\d+)", active.get("href", ""))
-                if match:
-                    current_build = int(match.group(1))
+        return self._extract_summary_stats_from_html(html)
 
-        wr_match = re.search(r"(\d{1,2}\.\d)%\s*WR", text)
+    def _extract_summary_stats_from_html(self, html: str) -> tuple[float | None, int | None]:
+        text = BeautifulSoup(html, "html.parser").get_text(" ", strip=True)
+        text = re.sub(r"\s+", " ", text)
+
+        wr_match = re.search(r"(\d{1,2}(?:\.\d+)?)\s*%\s*WR", text, flags=re.IGNORECASE)
+        matches_match = re.search(r"\(\s*([\d,]+)\s*Matches\s*\)", text, flags=re.IGNORECASE)
+
+        win_rate: float | None = None
+        matches: int | None = None
+
         if wr_match:
-            wr_by_build[current_build] = float(wr_match.group(1))
+            try:
+                win_rate = float(wr_match.group(1))
+            except ValueError:
+                win_rate = None
 
-        matches_match = re.search(r"\((\d+)\s+Matches\)", text)
         if matches_match:
-            matches_by_build[current_build] = int(matches_match.group(1))
+            try:
+                matches = int(matches_match.group(1).replace(",", ""))
+            except ValueError:
+                matches = None
 
-        return wr_by_build, matches_by_build
+        return win_rate, matches
 
     def _extract_hero_name(self, link: Any) -> str:
         img = link.find("img")
