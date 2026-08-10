@@ -42,24 +42,21 @@ def format_build_table(rows: list[BuildRow]) -> str:
     tracklock_rows = [row for row in rows if row.build_type == "tracklock"]
     custom_rows = [row for row in rows if row.build_type == "custom"]
 
-    headers = ("Source", "Build#", "Game ID", "Build", "Win Rate", "Matches")
-    source_w = max(len(headers[0]), max((len(r.build_type) for r in rows), default=6))
-    build_num_w = max(len(headers[1]), max((len(str(r.build_number)) if r.build_number is not None else 1 for r in rows), default=6))
-    game_id_w = max(len(headers[2]), max((len(r.game_build_id or "N/A") for r in rows), default=7))
-    name_w = max(len(headers[3]), min(26, max((len(r.build_name) for r in rows), default=5)))
-    win_w = len(headers[4])
-    matches_w = len(headers[5])
+    headers = ("Build ID", "Build", "Win Rate", "Matches")
+    build_id_w = max(len(headers[0]), max((len(r.game_build_id or "N/A") for r in rows), default=8))
+    name_w = max(len(headers[1]), min(30, max((len(r.build_name) for r in rows), default=5)))
+    win_w = len(headers[2])
+    matches_w = len(headers[3])
 
     lines = [
-        f"{headers[0].ljust(source_w)}  {headers[1].ljust(build_num_w)}  {headers[2].ljust(game_id_w)}  {headers[3].ljust(name_w)}  {headers[4].rjust(win_w)}  {headers[5].rjust(matches_w)}"
+        f"{headers[0].ljust(build_id_w)}  {headers[1].ljust(name_w)}  {headers[2].rjust(win_w)}  {headers[3].rjust(matches_w)}"
     ]
 
     def append_row(row: BuildRow) -> None:
         match_txt = "N/A" if row.matches is None else str(row.matches)
-        game_id_txt = row.game_build_id or "N/A"
-        build_num_txt = "-" if row.build_number is None else str(row.build_number)
+        build_id_txt = row.game_build_id or "N/A"
         lines.append(
-            f"{row.build_type.ljust(source_w)}  {build_num_txt.ljust(build_num_w)}  {game_id_txt.ljust(game_id_w)}  {_fit(row.build_name, name_w)}  {_pct(row.win_rate).rjust(win_w)}  {match_txt.rjust(matches_w)}"
+            f"{build_id_txt.ljust(build_id_w)}  {_fit(row.build_name, name_w)}  {_pct(row.win_rate).rjust(win_w)}  {match_txt.rjust(matches_w)}"
         )
 
     if tracklock_rows:
