@@ -75,7 +75,12 @@ class TracklockCog(commands.Cog):
         table = format_build_table(rows)
         hero_name = rows[0].hero_name
         builds_url = rows[0].hero_builds_url
-        copy_ids = " ".join(f"`{row.game_build_id}`" for row in rows if row.game_build_id)
+        tracklock_ids = " ".join(
+            f"`{row.game_build_id}`" for row in rows if row.build_type == "tracklock" and row.game_build_id
+        )
+        custom_ids = " ".join(
+            f"`{row.game_build_id}`" for row in rows if row.build_type == "custom" and row.game_build_id
+        )
         chunks = chunk_codeblock_table(table)
 
         embeds: list[nextcord.Embed] = []
@@ -90,8 +95,10 @@ class TracklockCog(commands.Cog):
                 color=nextcord.Color.green(),
                 url=builds_url,
             )
-            if idx == 1 and copy_ids:
-                embed.add_field(name="Build IDs", value=copy_ids, inline=False)
+            if idx == 1 and tracklock_ids:
+                embed.add_field(name="Tracklock Build ID", value=tracklock_ids, inline=False)
+            if idx == 1 and custom_ids:
+                embed.add_field(name="Extra Build IDs", value=custom_ids, inline=False)
             embed.add_field(name="Tracklock Page", value=f"[Open builds tab]({builds_url})", inline=False)
             embed.set_footer(text=self._footer(envelope, builds_url.replace("https://", "")))
             embeds.append(embed)

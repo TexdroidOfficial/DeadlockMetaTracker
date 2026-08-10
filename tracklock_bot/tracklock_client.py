@@ -9,7 +9,7 @@ from urllib.parse import urljoin
 import requests
 from bs4 import BeautifulSoup
 
-from .build_id_store import BuildIdStore
+from .build_id_store import BuildIdStore, HeroBuildIds
 from .cache import TTLCache
 from .models import BuildRow, TierRow
 
@@ -153,21 +153,39 @@ class TracklockClient:
 
         hero_name = self._extract_hero_title(soup) or hero_slug.replace("-", " ").title()
         hero_builds_url = urljoin(BASE_URL, f"/heroes/{hero_slug}/build")
+        ids = self._resolve_game_ids(hero_slug)
 
         build_names = self._extract_build_names(soup, hero_slug)
         summary_wr, summary_matches = self._extract_summary_wr_matches(soup)
 
         rows: list[BuildRow] = []
-        for build_number in sorted(build_names.keys()):
+        for index, build_number in enumerate(sorted(build_names.keys()), start=1):
+            tracklock_id = ids.tracklock_id if index == 1 else None
             rows.append(
                 BuildRow(
                     hero_name=hero_name,
                     hero_slug=hero_slug,
                     build_number=build_number,
-                    game_build_id=self._resolve_game_build_id(hero_slug, build_number),
+                    game_build_id=tracklock_id,
                     build_name=build_names[build_number],
+                    build_type="tracklock",
                     win_rate=summary_wr.get(build_number),
                     matches=summary_matches.get(build_number),
+                    hero_builds_url=hero_builds_url,
+                )
+            )
+
+        for custom_name, custom_id in ids.extras:
+            rows.append(
+                BuildRow(
+                    hero_name=hero_name,
+                    hero_slug=hero_slug,
+                    build_number=None,
+                    game_build_id=custom_id,
+                    build_name=custom_name,
+                    build_type="custom",
+                    win_rate=None,
+                    matches=None,
                     hero_builds_url=hero_builds_url,
                 )
             )
@@ -197,6 +215,7 @@ class TracklockClient:
 
             text = anchor.get_text(" ", strip=True)
             text = re.sub(r"\s+", " ", text)
+            text = re.sub(r"^Recommended\s*:\s*", "", text, flags=re.IGNORECASE)
             if not text:
                 continue
 
@@ -277,7 +296,7 @@ class TracklockClient:
         }
         return aliases.get(query, query)
 
-    def _resolve_game_build_id(self, hero_slug: str, build_number: int) -> str | None:
+    def _resolve_game_ids(self, hero_slug: str) -> HeroBuildIds:
         if self.build_id_store is None:
-            return None
-        return self.build_id_store.get_game_build_id(hero_slug, build_number)
+            return HeroBuildIds(tracklock_id=None, extras=[])
+        return self.build_id_store.get_ids(hero_slug)

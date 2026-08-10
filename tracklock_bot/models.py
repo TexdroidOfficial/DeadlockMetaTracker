@@ -16,9 +16,10 @@ class TierRow:
 class BuildRow:
     hero_name: str
     hero_slug: str
-    build_number: int
+    build_number: int | None
     game_build_id: str | None
     build_name: str
+    build_type: str
     win_rate: float | None
     matches: int | None
     hero_builds_url: str
