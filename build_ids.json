@@ -1,7 +1,163 @@
 {
+  "abrams": {
+    "tracklock": "317825"
+  },
+
+  "apollo": {
+    "tracklock": "469013",
+    "oses": "353960"
+  },
+  
+  "bebop": {
+    "tracklock": "317833"
+  },
+
+  "billy": {
+    "tracklock": "317853"
+  },
+
+  "calico": {
+    "tracklock": "317834"
+  },
+
+  "celeste": {
+    "tracklock": "459214"
+  },
+
+  "doorman": {
+    "tracklock": "317852"
+  },
+
+  "drifter": {
+    "tracklock": "317849",
+    "devilish": "610699"
+  },
+
+  "dynamo": {
+    "tracklock": "317829"
+  },
+
+  "graves": {
+    "tracklock": "430181"
+  },
+
+  "grey-talon" : {
+    "tracklock": "317835"
+  },
+
+  "haze": {
+    "tracklock": "317831"
+  },
+
+  "holliday": {
+    "tracklock": "317832"
+  },
+
+  "infernus": {
+    "tracklock": "317821"
+  },
+
+  "ivy": {
+    "tracklock": "317838"
+  },
+
+  "kelvin": {
+    "tracklock": "317830"
+  },
+
+  "lady-geist": {
+    "tracklock": "317824"
+  },
+
+  "lash": {
+    "tracklock": "317842"
+  },
+
+  "mcginnis": {
+    "tracklock": "317827"
+  },
+
+  "mina": {
+    "tracklock": "317848"
+  },
+
+  "mirage": {
+    "tracklock": "317845"
+  },
+
+  "mo-and-krill": {
+    "tracklock": "317836"
+  },
+
+  "paige": {
+    "tracklock": "317851"
+  },
+
+  "paradox": {
+    "tracklock": "317828"
+  },
+  
+  "pocket": {
+    "tracklock": "317844"
+  },
+
+  "rem": {
+    "tracklock": "426676"
+  },
+
+  "seven": {
+    "tracklock": "317822"
+  },
+
+  "shiv": {
+    "tracklock": "317837"
+  },
+
+  "silver": {
+    "tracklock": "440079",
+    "together": "347414"
+  },
+
+  "sinclair": {
+    "tracklock": "317847"
+  },
+
+  "venator": {
+    "tracklock": "449466"
+  },
+
   "victor": {
-    "1": "",
-    "2": "",
-    "3": ""
+    "tracklock": "317850",
+    "heresy": "511238",
+    "apacycle gun": "611933",
+    "apacycle spirit": "352387"
+  },
+  
+  "vindicta": {
+    "tracklock": "317823"
+  },
+
+  "viscous": {
+    "tracklock": "317843"
+  },
+
+  "viper": {
+    "tracklock": "317846",
+    "tbird": "375067"
+  },
+
+  "warden": {
+    "tracklock": "317839",
+    "metro": "419580"
+  },
+
+  "wraith": {
+    "tracklock": "317826",
+    "parzelion": "245057"
+  },
+
+  "yamato": {
+    "tracklock": "317840",
+    "together": "723126"
   }
 }
