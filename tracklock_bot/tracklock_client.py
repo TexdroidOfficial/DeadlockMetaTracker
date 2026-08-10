@@ -155,7 +155,7 @@ class TracklockClient:
         hero_builds_url = urljoin(BASE_URL, f"/heroes/{hero_slug}/build")
         ids = self._resolve_game_ids(hero_slug)
 
-        build_names = self._extract_build_names(soup, hero_slug)
+        build_names = self._extract_build_names(html, soup, hero_slug)
         rows: list[BuildRow] = []
         for index, build_number in enumerate(sorted(build_names.keys()), start=1):
             tracklock_id = ids.tracklock_id if index == 1 else None
@@ -204,24 +204,51 @@ class TracklockClient:
 
         return None
 
-    def _extract_build_names(self, soup: BeautifulSoup, hero_slug: str) -> dict[int, str]:
-        result: dict[int, str] = {}
+    def _extract_build_names(self, html: str, soup: BeautifulSoup, hero_slug: str) -> dict[int, str]:
+        result = self._extract_build_names_from_payload(html)
+        if result:
+            return result
+
+        result = {}
         for anchor in soup.find_all("a", href=True):
             href = anchor.get("href", "")
             match = BUILD_QUERY_RE.search(href)
             if match is None or match.group("slug") != hero_slug:
                 continue
 
-            text = anchor.get_text(" ", strip=True)
+            label_node = anchor.find("div", class_=re.compile(r"text-sm"))
+            if label_node is not None:
+                text = label_node.get_text(" ", strip=True)
+            else:
+                text = anchor.get_text(" ", strip=True)
             text = re.sub(r"\s+", " ", text)
             text = re.sub(r"^Recommended\s*:\s*", "", text, flags=re.IGNORECASE)
             if not text:
+                continue
+            if re.fullmatch(r"[0-9\s.,-]+", text):
                 continue
 
             num = int(match.group("num"))
             result[num] = text
 
         return result
+
+    def _extract_build_names_from_payload(self, html: str) -> dict[int, str]:
+        payload_match = re.search(r'buildsInfo\\":\[(.*?)\],\\"currentBuildQuery', html, flags=re.DOTALL)
+        if payload_match is None:
+            return {}
+
+        payload = payload_match.group(1)
+        found: dict[int, str] = {}
+        for number_text, label in re.findall(r'buildNumber\\":(\d+),\\"label\\":\\"(.*?)\\"', payload):
+            text = label.encode("utf-8").decode("unicode_escape")
+            text = re.sub(r"\s+", " ", text).strip()
+            text = re.sub(r"^Recommended\s*:\s*", "", text, flags=re.IGNORECASE)
+            if not text or re.fullmatch(r"[0-9\s.,-]+", text):
+                continue
+            found[int(number_text)] = text
+
+        return found
 
     def _fetch_build_summary_stats(self, hero_slug: str, build_number: int) -> tuple[float | None, int | None]:
         try:
@@ -291,6 +318,8 @@ class TracklockClient:
         aliases = {
             "viktor": "victor",
             "mcginnis": "mcginnis",
+            "viper": "vyper",
+            "doorman": "the-doorman",
             "lady-geist": "lady-geist",
             "geist": "lady-geist",
             "mo-&-krill": "mo-and-krill",
