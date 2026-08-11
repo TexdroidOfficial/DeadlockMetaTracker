@@ -26,6 +26,29 @@ def build_bot() -> commands.Bot:
     async def on_ready() -> None:
         logging.info("Logged in as %s (%s)", bot.user, bot.user.id if bot.user else "unknown")
 
+    @bot.event
+    async def on_application_command_error(
+        interaction: nextcord.Interaction,
+        error: Exception,
+    ) -> None:
+        logging.exception(
+            "Application command error user=%s command=%s",
+            interaction.user.id if interaction.user else "unknown",
+            interaction.application_command.qualified_name if interaction.application_command else "unknown",
+            exc_info=error,
+        )
+
+        if interaction.response.is_done():
+            try:
+                await interaction.followup.send("Something went wrong while processing that command.")
+            except Exception:
+                logging.exception("Failed to send followup error message")
+        else:
+            try:
+                await interaction.response.send_message("Something went wrong while processing that command.", ephemeral=True)
+            except Exception:
+                logging.exception("Failed to send initial error response")
+
     return bot
 
 

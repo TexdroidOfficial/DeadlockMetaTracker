@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import asyncio
 import logging
+import time
 from typing import cast
 
 import nextcord
@@ -22,12 +24,15 @@ class TracklockCog(commands.Cog):
 
     @nextcord.slash_command(description="Show the current Tracklock hero tier list")
     async def tierlist(self, interaction: Interaction) -> None:
+        started = time.perf_counter()
         await interaction.response.defer()
+        LOGGER.info("/tierlist deferred by user=%s", interaction.user.id if interaction.user else "unknown")
 
         try:
-            envelope = self.client.fetch_tierlist()
+            envelope = await asyncio.to_thread(self.client.fetch_tierlist)
         except TracklockError as exc:
             await interaction.followup.send(f"Could not fetch tier list right now: {exc}")
+            LOGGER.warning("/tierlist failed after %.2fs: %s", time.perf_counter() - started, exc)
             return
 
         rows = cast(list[TierRow], envelope.rows)
@@ -52,6 +57,13 @@ class TracklockCog(commands.Cog):
             embeds.append(embed)
 
         await interaction.followup.send(embeds=embeds)
+        LOGGER.info(
+            "/tierlist completed in %.2fs (rows=%s, chunks=%s, stale=%s)",
+            time.perf_counter() - started,
+            len(rows),
+            len(chunks),
+            envelope.stale,
+        )
 
     @nextcord.slash_command(description="Show available Tracklock builds for a hero")
     async def build(
@@ -59,12 +71,15 @@ class TracklockCog(commands.Cog):
         interaction: Interaction,
         hero: str = SlashOption(description="Hero name, e.g. victor", required=True),
     ) -> None:
+        started = time.perf_counter()
         await interaction.response.defer()
+        LOGGER.info("/build deferred by user=%s hero=%s", interaction.user.id if interaction.user else "unknown", hero)
 
         try:
-            envelope = self.client.fetch_builds(hero)
+            envelope = await asyncio.to_thread(self.client.fetch_builds, hero)
         except TracklockError as exc:
             await interaction.followup.send(f"Could not fetch builds right now: {exc}")
+            LOGGER.warning("/build failed after %.2fs hero=%s error=%s", time.perf_counter() - started, hero, exc)
             return
 
         rows = cast(list[BuildRow], envelope.rows)
@@ -104,6 +119,14 @@ class TracklockCog(commands.Cog):
             embeds.append(embed)
 
         await interaction.followup.send(embeds=embeds)
+        LOGGER.info(
+            "/build completed in %.2fs (hero=%s, rows=%s, chunks=%s, stale=%s)",
+            time.perf_counter() - started,
+            hero,
+            len(rows),
+            len(chunks),
+            envelope.stale,
+        )
 
     @staticmethod
     def _footer(envelope: DataEnvelope, source: str) -> str:
